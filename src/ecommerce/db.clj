@@ -14,41 +14,6 @@
 (defn apaga-banco! []
   (d/delete-database db-uri))
 
-; Produtos
-; id?
-; nome String 1 ==> Computador Novo
-; slug String 1 ==> /computador_novo
-; preco ponto flutuantes 1 ==> 3500.10
-; categoria_id integer ==> 3
-
-; id_entidade atributo valor
-; 15 :produto/nome Computador Novo     ID_TX     operacao
-; 15 :produto/slug /computador_novo    ID_TX     operacao
-; 15 :produto/preco 3500.10            ID_TX     operacao
-; 15 :produto/categoria 37
-; 17 :produto/nome Telefone Caro       ID_TX     operacao
-; 17 :produto/slug /telefone           ID_TX     operacao
-; 17 :produto/preco 8888.88            ID_TX     operacao
-
-; 37 :categoria/nome Eletronicos
-
-;[
-; :db/add :produto/nome "Camiseta"
-; :db/add :produto/slug "/camiseta"
-; :db/add :produto/preco 30M
-; ]
-;#datom[72 :db/ident :produto/nome]
-;#datom[73 :db/ident :produto/slug]
-;#datom[74 :db/ident :produto/preco]
-;
-;[?transacao 50 "2019-01-01"]
-;[_ _ _ ?transacao]
-;#datom[13194139534324 50 #inst "2022-06-23T14:36:42.572-00:00" 13194139534324 true]
-;#datom[17592186045429 72 "Camiseta" 13194139534324 true]
-;#datom[17592186045429 73 "/camiseta" 13194139534324 true]
-;#datom[17592186045429 74 30M 13194139534324 true]
-
-
 (def schema [
              ;Produtos
              {:db/ident       :produto/nome
@@ -96,6 +61,13 @@
 
              ])
 
+(defn dissoc-db-id [entidade]
+  (if (map? entidade)
+    (dissoc entidade :db/id)
+    entidade))
+
+(defn datomic-para-entidade [entidades]
+  (walk/prewalk dissoc-db-id entidades))
 
 (s/defn adiciona-ou-altera-produtos!
   ([conn, produtos :- [model/Produto]]
@@ -106,14 +78,6 @@
 
 (defn cria-schema! [conn]
   (d/transact conn schema))
-
-(defn dissoc-db-id [entidade]
-  (if (map? entidade)
-    (dissoc entidade :db/id)
-    entidade))
-
-(defn datomic-para-entidade [entidades]
-  (walk/prewalk dissoc-db-id entidades))
 
 ; o maybe permite nil
 ; nil permite nullpointerexception
@@ -259,3 +223,22 @@
     (if (:produto/id produto)
       produto
       nil)))
+
+(s/defn todos-os-produtos-nas-categorias :- [model/Produto] [db, categorias :- [s/Str]]
+  (datomic-para-entidade
+    (d/q '[:find [(pull ?produto [* {:produto/categoria [*]}]) ...]
+           :in $ [?nome-da-categoria ...]
+           :where [?categoria :categoria/nome ?nome-da-categoria]
+                  [?produto :produto/categoria ?categoria]]
+         db, categorias))
+  )
+
+(s/defn todos-os-produtos-nas-categorias-e-digital :- [model/Produto] [db, categorias :- [s/Str], digital? :- s/Bool]
+  (datomic-para-entidade
+    (d/q '[:find [(pull ?produto [* {:produto/categoria [*]}]) ...]
+           :in $ [?nome-da-categoria ...] ?eh-digital?
+           :where [?categoria :categoria/nome ?nome-da-categoria]
+                  [?produto :produto/categoria ?categoria]
+                  [?produto :produto/digital ?eh-digital?]]
+         db, categorias, digital?))
+  )

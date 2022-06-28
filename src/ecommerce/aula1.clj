@@ -10,19 +10,21 @@
 (db/apaga-banco!)
 (def conn (db/abre-conexao!))
 (db/cria-schema! conn)
-
-(defn teste-schema []
-  (def computador (model/novo-produto (model/uuid) "Computador Novo", "/computador-novo", 2500.10M))
-  (pprint (s/validate model/Produto computador))
-  ;(pprint (s/validate model/Produto (assoc computador :produto/preco 76)))
-
-  (def eletronicos (model/nova-categoria "Eletronicos"))
-  (pprint (s/validate model/Categoria eletronicos))
-  (pprint (s/validate model/Produto (assoc computador :produto/categoria eletronicos))))
-
-(teste-schema)
-
 (db/cria-dados-de-exemplo conn)
 
-(pprint (db/todas-as-categorias (d/db conn)))
 (pprint (db/todos-os-produtos (d/db conn)))
+
+(pprint (db/todos-os-produtos-nas-categorias (d/db conn) ["Eletronicos" "Alimentacao"]))
+(pprint (db/todos-os-produtos-nas-categorias (d/db conn) ["Eletronicos" "Esporte"]))
+(pprint (db/todos-os-produtos-nas-categorias (d/db conn) ["Esporte"]))
+(pprint (db/todos-os-produtos-nas-categorias (d/db conn) []))
+(pprint (db/todos-os-produtos-nas-categorias (d/db conn) ["Alimentacao"]))
+
+(pprint (db/todos-os-produtos-nas-categorias-e-digital (d/db conn) ["Esporte"] true))
+(pprint (db/todos-os-produtos-nas-categorias-e-digital (d/db conn) ["Esporte"] false))
+
+(pprint (db/todos-os-produtos-nas-categorias-e-digital (d/db conn) ["Eletronicos"] true))
+
+
+
+
