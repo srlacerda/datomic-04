@@ -232,7 +232,7 @@
     (d/q '[:find [(pull ?produto [* {:produto/categoria [*]}]) ...]
            :in $ [?nome-da-categoria ...]
            :where [?categoria :categoria/nome ?nome-da-categoria]
-                  [?produto :produto/categoria ?categoria]]
+           [?produto :produto/categoria ?categoria]]
          db, categorias))
   )
 
@@ -241,6 +241,22 @@
     (d/q '[:find [(pull ?produto [* {:produto/categoria [*]}]) ...]
            :in $, %, [?nome-da-categoria ...], ?eh-digital?
            :where (produto-na-categoria ?produto ?nome-da-categoria)
-                  [?produto :produto/digital ?eh-digital?]]
+           [?produto :produto/digital ?eh-digital?]]
          db, regras, categorias, digital?))
   )
+
+;(s/defn atualiza-preco
+;  [conn, produto-id :- java.util.UUID, preco-antigo :- BigDecimal, preco-novo :- BigDecimal]
+;  (if (= preco-antigo (:produto/preco (d/pull conn [*] (:produto/id produto-id))))
+;    ;essa abordagem horrivel nao garante atomicidade
+;    ; a linha anterior rodou. ponto. a linha seguinte roda.
+;    ; nao garante o que queriamos :(
+;    (d/transact conn [{:produto/id produto-id :produto/preco preco-novo}])
+;    (throw (ex-info "Valor foi alterado entre leitura e escrita" {:type :erros/transaction-validation-error})))
+;  )
+
+
+
+(s/defn atualiza-preco!
+  [conn, produto-id :- java.util.UUID, preco-antigo :- BigDecimal, preco-novo :- BigDecimal]
+  (d/transact conn [[:db/cas [:produto/id produto-id] :produto/preco preco-antigo preco-novo]]))
