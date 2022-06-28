@@ -3,7 +3,8 @@
   (:require [datomic.api :as d]
             [ecommerce.model :as model]
             [schema.core :as s]
-            [clojure.walk :as walk]))
+            [clojure.walk :as walk]
+            [clojure.set :as cset]))
 
 (def db-uri "datomic:dev://localhost:4334/ecommerce")
 
@@ -260,3 +261,14 @@
 (s/defn atualiza-preco!
   [conn, produto-id :- java.util.UUID, preco-antigo :- BigDecimal, preco-novo :- BigDecimal]
   (d/transact conn [[:db/cas [:produto/id produto-id] :produto/preco preco-antigo preco-novo]]))
+
+; voce poderia querer generalizar o framework pra
+; jogar exception caso exista campo em a-atualizar que nao existe em antigo
+(s/defn atualiza-produto!
+  [conn, antigo :- model/Produto, a-atualizar :- model/Produto]
+  (let [produto-id (:produto/id antigo)
+        atributos (cset/intersection (set (keys antigo)) (set (keys a-atualizar)))
+        atributos (disj atributos :produto/id )
+        txs (map (fn [atributo] [:db/cas [:produto/id produto-id] atributo (get antigo atributo) (get a-atualizar atributo)]) atributos)]
+    (d/transact conn txs))
+  )
