@@ -292,3 +292,12 @@
                      :variacao/id (model/uuid)}
                     {:produto/id produto-id
                      :produto/variacao "variacao-temporaria"}]))
+
+(defn total-de-produtos [db]
+  (d/q '[:find [(count ?produto)]
+         :where [?produto :produto/nome]]
+       db))
+
+(s/defn remove-produto!
+  [conn produto-id :- java.util.UUID]
+  (d/transact conn [[:db/retractEntity [:produto/id produto-id]]]))

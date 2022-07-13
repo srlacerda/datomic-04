@@ -25,4 +25,10 @@
 
 (pprint (db/todos-os-produtos (d/db conn)))
 
-;(pprint (db/total-de-produtos (d/db conn)))
+(pprint (db/total-de-produtos (d/db conn)))
+(pprint @(db/remove-produto! conn (:produto/id primeiro)))
+(pprint (db/total-de-produtos (d/db conn)))
+
+(pprint (d/q '[:find ?nome
+               :where [_ :variacao/nome ?nome]]
+             (d/db conn)))
