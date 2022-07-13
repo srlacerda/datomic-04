@@ -45,6 +45,7 @@
               :db/valueType   :db.type/boolean
               :db/cardinality :db.cardinality/one}
              {:db/ident       :produto/variacao
+              :db/isComponent true
               :db/valueType   :db.type/ref
               :db/cardinality :db.cardinality/many}
 
@@ -158,8 +159,8 @@
 
 (s/defn todos-os-produtos :- [model/Produto] [db]
   (datomic-para-entidade
-    (d/q '[:find [(pull ?entidade [* {:produto/categoria [*]}]) ...]
-           :where [?entidade :produto/nome]] db)))
+    (d/q '[:find [(pull ?produto [* {:produto/categoria [*]}]) ...]
+           :where [?produto :produto/nome]] db)))
 
 (defn cria-dados-de-exemplo [conn]
   (def eletronicos (model/nova-categoria "Eletronicos"))

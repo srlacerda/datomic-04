@@ -18,3 +18,11 @@
 
 (pprint @(db/adiciona-variacao! conn (:produto/id primeiro) "Season pass" 40M))
 (pprint @(db/adiciona-variacao! conn (:produto/id primeiro) "Season pass 4 anos" 60M))
+
+(d/q '[:find (pull ?produto [*])
+       :where [?produto :produto/nome]]
+     (d/db conn))
+
+(pprint (db/todos-os-produtos (d/db conn)))
+
+;(pprint (db/total-de-produtos (d/db conn)))

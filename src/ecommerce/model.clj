@@ -7,6 +7,11 @@
   {:categoria/id   java.util.UUID
    :categoria/nome s/Str})
 
+(def Variacao
+  {:variacao/id   java.util.UUID
+   :variacao/nome s/Str
+   :variacao/preco  BigDecimal})
+
 (def Produto
   {:produto/id                             java.util.UUID
    (s/optional-key :produto/nome)          s/Str
@@ -15,7 +20,8 @@
    (s/optional-key :produto/palavra-chave) [s/Str]
    (s/optional-key :produto/categoria)     Categoria
    (s/optional-key :produto/estoque)       s/Int
-   (s/optional-key :produto/digital)       s/Bool})
+   (s/optional-key :produto/digital)       s/Bool
+   (s/optional-key :produto/variacao)      [Variacao]})
 
 
 (s/defn novo-produto :- Produto
