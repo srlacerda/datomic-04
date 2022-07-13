@@ -16,7 +16,6 @@
   (d/delete-database db-uri))
 
 (def schema [
-             ;Produtos
              {:db/ident       :produto/nome
               :db/valueType   :db.type/string
               :db/cardinality :db.cardinality/one
@@ -45,8 +44,22 @@
              {:db/ident       :produto/digital
               :db/valueType   :db.type/boolean
               :db/cardinality :db.cardinality/one}
+             {:db/ident       :produto/variacao
+              :db/valueType   :db.type/ref
+              :db/cardinality :db.cardinality/many}
 
-             ;Categorias
+             {:db/ident       :variacao/id
+              :db/valueType   :db.type/uuid
+              :db/cardinality :db.cardinality/one
+              :db/unique      :db.unique/identity}
+
+             {:db/ident       :variacao/nome
+              :db/valueType   :db.type/string
+              :db/cardinality :db.cardinality/one}
+             {:db/ident       :variacao/preco
+              :db/valueType   :db.type/bigdec
+              :db/cardinality :db.cardinality/one}
+
              {:db/ident       :categoria/nome
               :db/valueType   :db.type/string
               :db/cardinality :db.cardinality/one}
@@ -55,7 +68,6 @@
               :db/cardinality :db.cardinality/one
               :db/unique      :db.unique/identity}
 
-             ;Transacoes
              {:db/ident       :tx-data/ip
               :db/valueType   :db.type/string
               :db/cardinality :db.cardinality/one}
@@ -152,15 +164,13 @@
 (defn cria-dados-de-exemplo [conn]
   (def eletronicos (model/nova-categoria "Eletronicos"))
   (def esporte (model/nova-categoria "Esporte"))
-  (pprint @(adiciona-categorias! conn [eletronicos, esporte]))
-
+  (adiciona-categorias! conn [eletronicos, esporte])
   (def computador (model/novo-produto (model/uuid) "Computador Novo", "/computador-novo", 2500.10M, 10))
   (def celular (model/novo-produto (model/uuid) "Celular Caro", "/celular", 888888.10M))
   (def celular-barato (model/novo-produto "Celular Barato", "/celular-barato", 0.1M))
   (def xadrez (model/novo-produto (model/uuid) "Tabuleiro de xadrez", "/tabuleiro-de-xadrez", 30M, 5))
   (def jogo (assoc (model/novo-produto (model/uuid) "Jogo online", "/jogo-online", 20M) :produto/digital true))
-  (pprint @(adiciona-ou-altera-produtos! conn [computador, celular, celular-barato, xadrez, jogo] "200.216.222.125"))
-
+  (adiciona-ou-altera-produtos! conn [computador, celular, celular-barato, xadrez, jogo] "200.216.222.125")
   (atribui-categorias! conn [computador, celular, celular-barato, jogo] eletronicos)
   (atribui-categorias! conn [xadrez] esporte))
 
@@ -268,7 +278,16 @@
   [conn, antigo :- model/Produto, a-atualizar :- model/Produto]
   (let [produto-id (:produto/id antigo)
         atributos (cset/intersection (set (keys antigo)) (set (keys a-atualizar)))
-        atributos (disj atributos :produto/id )
+        atributos (disj atributos :produto/id)
         txs (map (fn [atributo] [:db/cas [:produto/id produto-id] atributo (get antigo atributo) (get a-atualizar atributo)]) atributos)]
     (d/transact conn txs))
   )
+
+(s/defn adiciona-variacao!
+  [conn, produto-id :- java.util.UUID, variacao :- s/Str, preco :- BigDecimal]
+  (d/transact conn [{:db/id "variacao-temporaria"
+                     :variacao/nome variacao
+                     :variacao/preco preco
+                     :variacao/id (model/uuid)}
+                    {:produto/id produto-id
+                     :produto/variacao "variacao-temporaria"}]))
