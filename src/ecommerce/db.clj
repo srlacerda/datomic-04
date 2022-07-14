@@ -306,15 +306,19 @@
   [conn produto-id :- java.util.UUID]
   (d/transact conn [[:db/retractEntity [:produto/id produto-id]]]))
 
-(s/defn visualizacoes [db, produto-id :- java.util.UUID]
-  (or (d/q '[:find ?visualizacoes .
-             :in $ id
-             :where [?p :produto/id ?id]
-             [?p :produto/visualizacoes ?visualizacoes]]
-           db, produto-id) 0))
+;perigo pois nao tem atomicidade
+;(s/defn visualizacoes [db, produto-id :- java.util.UUID]
+;  (or (d/q '[:find ?visualizacoes .
+;             :in $ id
+;             :where [?p :produto/id ?id]
+;             [?p :produto/visualizacoes ?visualizacoes]]
+;           db, produto-id) 0))
+;
+;(s/defn visualizacao! [conn, produto-id :- java.util.UUID]
+;  (let [ate-agora (visualizacoes (d/db conn) produto-id)
+;        novo-valor (inc ate-agora)]
+;    (d/transact conn [{:produto/id            produto-id
+;                       :produto/visualizacoes novo-valor}])))
 
 (s/defn visualizacao! [conn, produto-id :- java.util.UUID]
-  (let [ate-agora (visualizacoes (d/db conn) produto-id)
-        novo-valor (inc ate-agora)]
-    (d/transact conn [{:produto/id            produto-id
-                       :produto/visualizacoes novo-valor}])))
+  (d/transact conn [[:incrementa-visualizacao produto-id]]))
